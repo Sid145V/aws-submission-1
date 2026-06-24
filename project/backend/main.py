@@ -50,15 +50,8 @@ def startup_event():
         logger.critical(f"Failed to initialize database tables: {e}")
         raise e
 
-    # 2. Attempt to pre-load FAISS vector store
-    try:
-        db = VectorStoreManager.get_vector_store()
-        if db is not None:
-            logger.info("Pre-loaded FAISS vector store on startup.")
-        else:
-            logger.warning("FAISS vector store is not initialized. Please call POST /ingest to process the PDF.")
-    except Exception as e:
-        logger.error(f"Error loading FAISS vector store on startup: {e}")
+    # Vector store loads lazily on first request to save memory on free tier
+    logger.info("Vector store will load on first request (lazy loading enabled).")
 
 @app.get("/")
 def read_root():
