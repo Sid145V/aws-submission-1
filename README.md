@@ -1,180 +1,208 @@
+<div align="center">
+
 # AWS Customer Agreement RAG Assistant
 
-A complete, production-ready, industry-level Retrieval-Augmented Generation (RAG) system built to ingest, chunk, index, search, and answer complex legal queries from the 19-page **AWS Customer Agreement** PDF.
+**A production-ready Retrieval-Augmented Generation (RAG) system for legal document Q&A**
 
-The system features a **FastAPI backend** for high-performance API services, an embedding and local vector search database utilizing **FAISS**, and a **Streamlit frontend** with a custom dark-themed Chat Assistant and an interactive Analytics Dashboard powered by **Plotly**.
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Streamlit-FF4B4B?style=for-the-badge&logo=streamlit)](https://aws-submission-1-uxpa7cch2fm32cwexhosrv.streamlit.app)
+[![Backend API](https://img.shields.io/badge/Backend%20API-Render-46E3B7?style=for-the-badge&logo=render)](https://aws-rag-backend.onrender.com)
+[![API Docs](https://img.shields.io/badge/Swagger-Docs-85EA2D?style=for-the-badge&logo=swagger)](https://aws-rag-backend.onrender.com/docs)
+
+</div>
 
 ---
 
-## Technical Architecture
+## 🚀 Live Demo
 
-```mermaid
-flowchart TD
-    subgraph Ingestion Pipeline [1. Ingestion Pipeline]
-        A[AWS Customer Agreement PDF] --> B[PyMuPDF Parser]
-        B --> C[Recursive Header-Aware Chunker]
-        C --> D[SentenceTransformers all-MiniLM-L6-v2]
-        D --> E[(FAISS Vector Store)]
-    end
+| Service | URL |
+|---------|-----|
+| **Frontend (Streamlit)** | [aws-submission-1-uxpa7cch2fm32cwexhosrv.streamlit.app](https://aws-submission-1-uxpa7cch2fm32cwexhosrv.streamlit.app) |
+| **Backend API** | [aws-rag-backend.onrender.com](https://aws-rag-backend.onrender.com) |
+| **Swagger API Docs** | [/docs](https://aws-rag-backend.onrender.com/docs) |
 
-    subgraph Query Pipeline [2. Query Pipeline]
-        F[User Query] --> G{Similarity Search}
-        E --> G
-        G -- Top score < 0.55 --> H[Bypass LLM: Out-of-Context Response]
-        G -- Top score >= 0.55 --> I[Gemini 2.5 Flash LLM]
-        I --> J[Response with Citations]
-    end
+> ⚠️ Backend runs on Render's free tier — first request may take ~50 seconds to wake up.
 
-    subgraph Monitoring & Analytics [3. Monitoring & Analytics]
-        H --> K[(SQLite Database: Query Logs)]
-        J --> K
-        K --> L[Streamlit Analytics Dashboard]
-    end
+---
+
+## 📌 Overview
+
+A complete, industry-grade RAG pipeline that ingests, chunks, indexes, and answers complex legal queries from the **19-page AWS Customer Agreement PDF** using Google Gemini 2.5 Flash as the LLM.
+
+Features a **FastAPI backend**, **FAISS vector search**, **Google Generative AI embeddings**, a **custom dark-themed Streamlit chat UI**, and an **interactive Plotly analytics dashboard** — all deployed on free cloud infrastructure.
+
+---
+
+## ✨ Key Features
+
+- 📄 **PDF Ingestion Pipeline** — PyMuPDF parser with recursive header-aware chunking
+- 🔍 **Semantic Search** — FAISS vector store with cosine similarity scoring
+- 🧠 **Gemini 2.5 Flash LLM** — Grounded answers with source citations
+- 🛡️ **Hallucination Prevention** — Queries below 0.55 similarity score bypass the LLM entirely
+- 💬 **Chat Assistant UI** — Custom dark-themed Streamlit interface
+- 📊 **Analytics Dashboard** — Real-time Plotly charts tracking query performance
+- 🗄️ **Query Logging** — SQLite database logging every query with metadata
+- 🌐 **REST API** — Full FastAPI backend with Swagger documentation
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| **Frontend** | Streamlit + Plotly | Chat UI & analytics dashboard |
+| **Backend** | FastAPI + Uvicorn | High-performance REST API |
+| **LLM** | Google Gemini 2.5 Flash | Answer generation |
+| **Embeddings** | Google Text Embedding 004 | Semantic vector generation |
+| **Vector DB** | FAISS (CPU) | Local similarity search |
+| **PDF Parser** | PyMuPDF | Fast, structure-preserving extraction |
+| **Database** | SQLite + SQLAlchemy | Query logging & analytics |
+| **Hosting** | Render + Streamlit Cloud | Free cloud deployment |
+
+---
+
+## 🏗️ System Architecture
+
+```
+User Question
+     │
+     ▼
+Streamlit Frontend
+     │ POST /ask
+     ▼
+FastAPI Backend
+     │
+     ├──► FAISS Vector Store (similarity search)
+     │         │
+     │    Score < 0.55 ──► "Out of context" response (no LLM call)
+     │    Score ≥ 0.55 ──► Gemini 2.5 Flash
+     │                          │
+     │                          ▼
+     │                   Answer + Citations
+     │
+     └──► SQLite (log every query)
+               │
+               ▼
+         Analytics Dashboard
 ```
 
 ---
 
-## Folder Structure
+## 🧠 Design Decisions
 
-```text
+| Component | Choice | Why |
+|-----------|--------|-----|
+| **PDF Parser** | PyMuPDF | Fastest parser, preserves page structure and indentation |
+| **Chunking** | Recursive (1000 chars, 200 overlap) | Prevents mid-sentence cuts, preserves context |
+| **Embeddings** | Google Text Embedding 004 | Free API, no RAM overhead vs local models |
+| **Vector DB** | FAISS | Lightweight, local, zero cloud dependency |
+| **RAG Threshold** | 0.55 cosine similarity | Stops hallucinations for out-of-scope queries |
+| **LLM** | Gemini 2.5 Flash | Fast, large context window, free tier available |
+| **Database** | SQLite | Zero config, embedded, perfect for analytics |
+| **Frontend** | Streamlit | Rapid Python UI with Plotly chart integration |
+
+---
+
+## 📡 API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/` | Health check & system status |
+| POST | `/ingest` | Ingest & index the AWS PDF |
+| POST | `/ask` | Ask a legal question, get RAG answer |
+| GET | `/analytics` | Query performance aggregations |
+
+### Example — Ask a question:
+```bash
+curl -X POST "https://aws-rag-backend.onrender.com/ask" \
+     -H "Content-Type: application/json" \
+     -d '{"query": "How can I terminate the agreement?"}'
+```
+
+---
+
+## 📁 Project Structure
+
+```
 project/
 ├── backend/
 │   ├── api/
-│   │   ├── analytics.py      # Aggregated performance endpoints
-│   │   ├── ask.py            # RAG QA endpoint
-│   │   └── ingest.py         # PDF processing/indexing endpoint
-│   ├── database/
-│   │   ├── db.py             # SQLite connection & session helpers
-│   │   └── models.py         # SQLAlchemy QueryLog model
-│   ├── schemas/
-│   │   ├── request.py        # Pydantic query schemas
-│   │   └── response.py       # Pydantic response schemas
+│   │   ├── ask.py            # RAG Q&A endpoint
+│   │   ├── ingest.py         # PDF ingestion endpoint
+│   │   └── analytics.py      # Analytics aggregation endpoint
 │   ├── services/
-│   │   ├── analytics_service.py # Database statistics & analytics
-│   │   ├── chunker.py        # Intelligent page/section recursive chunker
-│   │   ├── embeddings.py     # SentenceTransformers embedding engine
-│   │   ├── pdf_loader.py     # PyMuPDF PDF page & section parser
+│   │   ├── embeddings.py     # Google embedding wrapper
+│   │   ├── vector_store.py   # FAISS manager & similarity search
 │   │   ├── rag_pipeline.py   # RAG pipeline coordinator
-│   │   └── vector_store.py   # FAISS manager & similarity search
-│   ├── utils/
-│   │   └── logger.py         # Rich terminal and file logging config
-│   ├── config.py             # Environment configurations & paths
-│   └── main.py               # FastAPI application entry point
-├── data/
-│   └── aws_customer_agreement.pdf # Document under analysis
-├── docs/
-│   └── screenshots/          # Application screenshots (UI demo)
+│   │   ├── chunker.py        # Recursive text chunker
+│   │   └── pdf_loader.py     # PyMuPDF PDF parser
+│   ├── database/
+│   │   ├── db.py             # SQLite connection
+│   │   └── models.py         # QueryLog SQLAlchemy model
+│   └── main.py               # FastAPI app entry point
 ├── frontend/
-│   └── app.py                # Streamlit UI (Chat Assistant & Analytics)
-├── tests/
-│   └── test_rag.py           # End-to-end integration and seeding script
-├── .env.example              # Template for environment variables
-├── .env                      # Local configuration settings (ignored by git)
-└── requirements.txt          # Python packages list
+│   └── app.py                # Streamlit Chat UI + Analytics
+├── data/
+│   └── aws_customer_agreement.pdf
+└── requirements.txt
 ```
 
 ---
 
-## Prerequisites & Installation
+## 🚀 Local Setup
 
-### 1. Prerequisites
-- Python `3.10` or higher
-- A Google Gemini API Key (obtain from [Google AI Studio](https://aistudio.google.com/))
+### Prerequisites
+- Python 3.10+
+- Google Gemini API Key — free from [aistudio.google.com](https://aistudio.google.com)
 
-### 2. Setup environment
-Clone or copy the directory and navigate to the project directory:
+### Run locally
+
 ```bash
-cd "project"
-```
+# Clone the repo
+git clone https://github.com/Sid145V/aws-submission-1.git
+cd aws-submission-1/project
 
-Create a virtual environment and activate it:
-```bash
+# Create virtual environment
 python -m venv venv
-# On Windows:
-venv\Scripts\activate
-# On Linux/macOS:
-source venv/bin/activate
-```
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
-Install requirements:
-```bash
+# Install dependencies
 pip install -r requirements.txt
-```
 
-### 3. Configure Environment Variables
-Copy `.env.example` to `.env` and fill in your Gemini API Key:
-```bash
+# Configure environment
 cp .env.example .env
-```
-Inside `.env`:
-```env
-GEMINI_API_KEY=your_actual_gemini_api_key_here
-SIMILARITY_THRESHOLD=0.55
-TOP_K=5
-```
+# Add your GEMINI_API_KEY to .env
 
----
-
-## Execution Guide
-
-### 1. Run Automated Verification & Seeding
-The system includes an end-to-end integration script that launches the FastAPI backend in the background, triggers document ingestion, runs 30 test queries (20 valid questions and 10 invalid out-of-context questions), logs metrics, and prints analytics summary:
-```bash
-python tests/test_rag.py
-```
-> [!NOTE]
-> If a valid Gemini API key is not yet set in `.env`, the script automatically writes mocked legal responses directly to the SQLite database. This ensures your Analytics Dashboard is immediately seeded with realistic data for demo purposes!
-
-### 2. Run Backend Server manually
-To start the FastAPI server:
-```bash
+# Start backend
 uvicorn backend.main:app --host 127.0.0.1 --port 8000
-```
-- API Docs will be available at: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-- Base endpoint health check: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
 
-### 3. Run Streamlit Frontend
-To launch the user interface:
-```bash
+# Start frontend (new terminal)
 streamlit run frontend/app.py
 ```
-The browser will automatically open [http://localhost:8501](http://localhost:8501).
+
+Then open [http://localhost:8501](http://localhost:8501)
 
 ---
 
-## API Endpoints (cURL Examples)
+## 🌟 What Makes This Stand Out
 
-### 1. Document Ingestion
-Ingests and indexes the default PDF (`data/aws_customer_agreement.pdf`) or accepts an uploaded file:
-```bash
-curl -X POST "http://127.0.0.1:8000/ingest"
-```
-
-### 2. Querying RAG
-Asks a legal question about the customer agreement:
-```bash
-curl -X POST "http://127.0.0.1:8000/ask" \
-     -H "Content-Type: application/json" \
-     -d "{\"query\": \"How can I terminate the agreement?\"}"
-```
-
-### 3. Analytics Dashboard Data
-Retrieves system-wide aggregations:
-```bash
-curl -X GET "http://127.0.0.1:8000/analytics"
-```
+- **End-to-end RAG pipeline** built from scratch — not a tutorial copy
+- **Hallucination guard** — similarity threshold prevents false answers
+- **Analytics dashboard** — tracks system performance in real time
+- **Production deployed** on free cloud infrastructure
+- **Clean API design** with full Swagger documentation
 
 ---
 
-## Design Justifications
+## 👨‍💻 Author
 
-| Component | Choice | Justification |
-| :--- | :--- | :--- |
-| **PDF Processing** | **PyMuPDF** | Significantly faster than PyPDF2/pdfplumber. Retains structural indentation, page offsets, and table layout representations. |
-| **Text Chunks** | **Recursive Chunker** | Splitting text recursively (1000 char size, 200 char overlap) prevents cutting sentences. Prepending metadata (page, section headers) ensures context is not lost in retrieval. |
-| **Embeddings** | **SentenceTransformers** | Runs completely locally (offline-capable) using `all-MiniLM-L6-v2` generating 384-dimensional dense vectors. High performance, zero cost, and fast execution on CPUs. |
-| **Vector DB** | **FAISS** | Fast, lightweight, and saves index files locally to disk. Perfect for document-specific contexts, eliminating complex cloud vector database overheads. |
-| **RAG Threshold** | **0.55 Cosine Sim** | Prevents hallucinations by calculating similarity scores. Queries scoring below `0.55` bypass Gemini API completely, saving tokens and raising system safety. |
-| **Generative LLM** | **Gemini 2.5 Flash** | Advanced context reasoning, extremely fast response latency, and massive context window for grounding. |
-| **SQL Database** | **SQLite (SQLAlchemy)** | Embedded SQL database with zero configuration. Standard SQL allows full aggregation queries and enables direct database queries from frontend charts. |
-| **Frontend UI** | **Streamlit** | Rapidly builds beautiful, interactive web apps in python. Integrated with Plotly for dashboard charts and supports complex CSS injection for custom UI aesthetics. |
+**Siddanagouda** — B.E. Computer Science, CBIT Kolar (2026)
+
+Targeting roles in **AI Full Stack**, **GenAI Engineering**, and **Full Stack Development**.
+
+[![GitHub](https://img.shields.io/badge/GitHub-Sid145V-181717?style=flat&logo=github)](https://github.com/Sid145V)
+
+---
+
+<div align="center">
+  <sub>Built as part of VeStaff Junior AI Developer Technical Assignment</sub>
+</div>
