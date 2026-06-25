@@ -1,34 +1,49 @@
-from langchain_community.embeddings import HuggingFaceEmbeddings
+import google.generativeai as genai
+from langchain_core.embeddings import Embeddings
 from backend.config import Config
 from backend.utils.logger import get_logger
+from typing import List
 
 logger = get_logger("embeddings")
 
+
+class GoogleEmbeddings(Embeddings):
+    """
+    Lightweight embedding wrapper using Google's free Generative AI embedding API.
+    Replaces heavy sentence-transformers model to stay within free tier RAM limits.
+    """
+
+    def __init__(self):
+        genai.configure(api_key=Config.GEMINI_API_KEY)
+        logger.info("Google Generative AI Embeddings initialized.")
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        embeddings = []
+        for text in texts:
+            result = genai.embed_content(
+                model="models/text-embedding-004",
+                content=text,
+                task_type="retrieval_document"
+            )
+            embeddings.append(result["embedding"])
+        return embeddings
+
+    def embed_query(self, text: str) -> List[float]:
+        result = genai.embed_content(
+            model="models/text-embedding-004",
+            content=text,
+            task_type="retrieval_query"
+        )
+        return result["embedding"]
+
+
 class EmbeddingModelWrapper:
-    """
-    Wrapper around the Sentence Transformers embedding model used for generating 
-    text embeddings. Implements the LangChain Embeddings interface.
-    """
-    
     _instance = None
 
     @classmethod
-    def get_embeddings_model(cls) -> HuggingFaceEmbeddings:
-        """
-        Singleton pattern to load and cache the HuggingFace embedding model.
-        """
+    def get_embeddings_model(cls) -> GoogleEmbeddings:
         if cls._instance is None:
-            model_name = Config.EMBEDDING_MODEL_NAME
-            logger.info(f"Initializing HuggingFaceEmbeddings with model: {model_name}")
-            try:
-                # Initialize HuggingFaceEmbeddings using SentenceTransformers under the hood
-                cls._instance = HuggingFaceEmbeddings(
-                    model_name=model_name,
-                    model_kwargs={'device': 'cpu'},  # Default to CPU for portability
-                    encode_kwargs={'normalize_embeddings': True}  # Use Cosine Similarity / Inner Product
-                )
-                logger.info("Embedding model loaded successfully.")
-            except Exception as e:
-                logger.error(f"Failed to load embedding model: {e}")
-                raise e
+            logger.info("Loading Google Embedding model...")
+            cls._instance = GoogleEmbeddings()
+            logger.info("Google Embedding model ready.")
         return cls._instance
